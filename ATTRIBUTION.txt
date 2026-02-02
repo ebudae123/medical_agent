@@ -1,0 +1,67 @@
+ATTRIBUTION
+
+This project uses the following third-party libraries, models, and resources.
+
+---
+
+### AI MODELS
+
+**Google Gemini**
+- Provider: Google DeepMind / Google Cloud
+- Model IDs: gemini-2.0-flash-exp, gemini-1.5-flash
+- Usage: Medical reasoning, fact extraction, risk assessment.
+- Terms: Subject to Google Generative AI Terms of Service.
+
+---
+
+### OPEN SOURCE LIBRARIES
+
+The following Python libraries are used in this project. Reference `requirements.txt` for specific versions.
+
+**FastAPI** 
+- License: MIT
+- Copyright: (c) 2018 Sebastián Ramírez
+
+**Uvicorn**
+- License: BSD 3-Clause
+- Copyright: (c) 2017 Tom Christie
+
+**SQLAlchemy**
+- License: MIT
+- Copyright: (c) 2005-2023 Mike Bayer
+
+**Asyncpg**
+- License: Apache 2.0
+- Copyright: (c) 2016 MagicStack Inc.
+
+**Alembic**
+- License: MIT
+- Copyright: (c) 2010-2023 Mike Bayer
+
+**Pydantic**
+- License: MIT
+- Copyright: (c) 2017 Samuel Colvin
+
+**LangGraph / LangChain**
+- License: MIT
+- Copyright: (c) LangChain, Inc.
+
+**Google Generative AI SDK (google-generativeai)**
+- License: Apache 2.0
+- Copyright: (c) 2023 Google LLC
+
+**Pytest**
+- License: MIT
+- Copyright: (c) 2004 Holger Krekel and others
+
+**HTTPX**
+- License: BSD 3-Clause
+- Copyright: (c) 2019 Tom Christie
+
+---
+
+### PROJECT LICENSE
+
+**Nightingale AI**
+- License: MIT
+- Copyright: (c) 2026 Nightingale Contributors

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Nightingale AI Medical Assistant">
+    <meta name="theme-color" content="#4F46E5">
+    <link rel="manifest" href="/manifest.json">
+    <title>Nightingale AI - Medical Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="login-container">
+                <div class="logo">
+                    <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                        <circle cx="30" cy="30" r="28" fill="#4F46E5" opacity="0.1" />
+                        <path d="M30 15L35 25L45 27L37 35L39 45L30 40L21 45L23 35L15 27L25 25L30 15Z" fill="#4F46E5" />
+                    </svg>
+                    <h1>Nightingale AI</h1>
+                    <p>Your Medical Assistant</p>
+                </div>
+
+                <div class="login-form">
+                    <h2>Login</h2>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" placeholder="Enter your username" required
+                                autocomplete="username" />
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" placeholder="Enter your password"
+                                required autocomplete="current-password" />
+                        </div>
+                        <div id="login-error" class="error-message" style="display: none;"></div>
+                        <button type="submit" class="login-btn">Login</button>
+                    </form>
+                    <div class="test-accounts-info">
+                        <p><strong>Test Accounts:</strong></p>
+                        <p>Patients: patient1, patient2, patient3, patient4</p>
+                        <p>Clinicians: clinician1, clinician2</p>
+                        <p>Password: test123</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient Chat Screen -->
+        <div id="chat-screen" class="screen">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="header-left">
+                        <h2>Nightingale AI</h2>
+                        <span class="status-indicator">● Online</span>
+                    </div>
+                    <button id="logout-btn" class="icon-btn">
+                        <span>Logout</span>
+                    </button>
+                </div>
+
+                <div id="messages-container" class="messages-container">
+                    <div class="welcome-message">
+                        <h3>Welcome to Nightingale AI</h3>
+                        <p>I'm here to help with your health questions. Please describe your symptoms or concerns.</p>
+                        <div class="safety-notice">
+                            <strong>⚠️ Important:</strong> This is not a substitute for professional medical advice. In
+                            case of emergency, call 911 immediately.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <textarea id="message-input" placeholder="Describe your symptoms or ask a question..."
+                        rows="1"></textarea>
+                    <button id="send-btn" class="send-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 8L11 13" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clinician Dashboard Screen -->
+        <div id="dashboard-screen" class="screen">
+            <div class="dashboard-container">
+                <div class="dashboard-header">
+                    <h2>Escalation Dashboard</h2>
+                    <button id="dashboard-logout-btn" class="icon-btn">Logout</button>
+                </div>
+
+                <div id="escalations-container" class="escalations-container">
+                    <div class="loading">Loading escalations...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

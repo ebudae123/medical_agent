@@ -1,0 +1,358 @@
+// API Configuration
+const API_BASE = 'http://localhost:8000/api/v1';
+
+// State
+let currentUser = null;
+let currentConversation = null;
+let messagePollingInterval = null;
+let lastMessageCount = 0;
+
+// DOM Elements
+const loginScreen = document.getElementById('login-screen');
+const chatScreen = document.getElementById('chat-screen');
+const dashboardScreen = document.getElementById('dashboard-screen');
+const messagesContainer = document.getElementById('messages-container');
+const messageInput = document.getElementById('message-input');
+const sendBtn = document.getElementById('send-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const dashboardLogoutBtn = document.getElementById('dashboard-logout-btn');
+const escalationsContainer = document.getElementById('escalations-container');
+
+// Event Listeners
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    await handleLogin(username, password);
+});
+
+sendBtn.addEventListener('click', sendMessage);
+messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+logoutBtn.addEventListener('click', logout);
+dashboardLogoutBtn.addEventListener('click', logout);
+
+// Auto-resize textarea
+messageInput.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
+// Functions
+async function handleLogin(username, password) {
+    try {
+        loginError.style.display = 'none';
+
+        const response = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Login failed');
+        }
+
+        const data = await response.json();
+        currentUser = data;
+
+        if (data.role === 'PATIENT') {
+            await startConversation();
+            showScreen('chat');
+        } else {
+            await loadEscalations();
+            showScreen('dashboard');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        loginError.textContent = error.message || 'Invalid username or password';
+        loginError.style.display = 'block';
+    }
+}
+
+async function startConversation() {
+    try {
+        // First, check if patient has an existing active/escalated conversation
+        const checkResponse = await fetch(`${API_BASE}/conversations/patient/${currentUser.user_id}/latest`);
+        const checkData = await checkResponse.json();
+
+        if (checkData.exists) {
+            // Load existing conversation
+            currentConversation = checkData;
+            console.log('Loading existing conversation:', currentConversation.id);
+
+            // Load all existing messages
+            const messagesResponse = await fetch(`${API_BASE}/conversations/${currentConversation.id}`);
+            const conversationData = await messagesResponse.json();
+
+            // Display all existing messages
+            conversationData.messages.forEach(msg => {
+                const senderType = msg.sender_type.toLowerCase();
+                addMessage(senderType, msg.content, msg.risk_level);
+                lastMessageCount++;
+            });
+        } else {
+            // Create new conversation
+            console.log('Creating new conversation');
+            const response = await fetch(`${API_BASE}/conversations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ patient_id: currentUser.user_id })
+            });
+
+            currentConversation = await response.json();
+        }
+
+        // Start polling for new messages (clinician responses)
+        startMessagePolling();
+    } catch (error) {
+        console.error('Error starting conversation:', error);
+    }
+}
+
+async function sendMessage() {
+    const content = messageInput.value.trim();
+    if (!content || !currentConversation) return;
+
+    // Disable input
+    messageInput.disabled = true;
+    sendBtn.disabled = true;
+
+    // Add patient message to UI
+    addMessage('patient', content);
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+
+    // Increment message count for patient message
+    lastMessageCount++;
+
+    try {
+        const response = await fetch(`${API_BASE}/conversations/${currentConversation.id}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: content })
+        });
+
+        const data = await response.json();
+
+        // Add AI response
+        if (data.response) {
+            setTimeout(() => {
+                addMessage('ai', data.response, data.risk_level);
+                // Increment message count for AI response
+                lastMessageCount++;
+            }, 500);
+        }
+
+        // Show escalation notice
+        if (data.escalated) {
+            setTimeout(() => {
+                addEscalationNotice();
+            }, 1000);
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+        addMessage('ai', 'Sorry, I encountered an error. Please try again.');
+        lastMessageCount++; // Count error message too
+    } finally {
+        messageInput.disabled = false;
+        sendBtn.disabled = false;
+        messageInput.focus();
+    }
+}
+
+function addMessage(sender, content, riskLevel = 'LOW') {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = sender === 'patient' ? '👤' : sender === 'clinician' ? '👨‍⚕️' : '🤖';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    // Add clinician badge if message is from clinician
+    if (sender === 'clinician') {
+        const badge = document.createElement('div');
+        badge.className = 'clinician-badge';
+        badge.textContent = '👨‍⚕️ Clinician Response';
+        badge.style.cssText = 'background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-bottom: 8px; display: inline-block;';
+        contentDiv.appendChild(badge);
+        contentDiv.appendChild(document.createElement('br'));
+    }
+
+    const textNode = document.createTextNode(content);
+    contentDiv.appendChild(textNode);
+
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(contentDiv);
+
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function addEscalationNotice() {
+    const notice = document.createElement('div');
+    notice.className = 'escalation-notice';
+    notice.innerHTML = `
+        <strong>⚠️ Escalated to Healthcare Professional</strong><br>
+        Your message has been forwarded to a clinician who will respond shortly.
+    `;
+    messagesContainer.appendChild(notice);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+async function loadEscalations() {
+    try {
+        const response = await fetch(`${API_BASE}/escalations`);
+        const escalations = await response.json();
+
+        escalationsContainer.innerHTML = '';
+
+        if (escalations.length === 0) {
+            escalationsContainer.innerHTML = '<div class="loading">No pending escalations</div>';
+            return;
+        }
+
+        escalations.forEach(escalation => {
+            const card = createEscalationCard(escalation);
+            escalationsContainer.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error loading escalations:', error);
+        escalationsContainer.innerHTML = '<div class="loading">Error loading escalations</div>';
+    }
+}
+
+function createEscalationCard(escalation) {
+    const card = document.createElement('div');
+    card.className = 'escalation-card';
+
+    const riskClass = escalation.risk_level.toLowerCase();
+
+    card.innerHTML = `
+        <div class="escalation-header">
+            <div class="patient-info">
+                <h3>${escalation.patient_name}</h3>
+                <p>Created: ${new Date(escalation.created_at).toLocaleString()}</p>
+            </div>
+            <span class="risk-badge ${riskClass}">${escalation.risk_level} RISK</span>
+        </div>
+        <div class="clinical-summary">${escalation.clinical_summary}</div>
+        <div style="margin-top: 16px;">
+            <button class="icon-btn" onclick="respondToEscalation('${escalation.id}', '${escalation.conversation_id}')">
+                Respond to Patient
+            </button>
+        </div>
+    `;
+
+    return card;
+}
+
+async function respondToEscalation(ticketId, conversationId) {
+    const response = prompt('Enter your response to the patient:');
+    if (!response) return;
+
+    try {
+        await fetch(`${API_BASE}/escalations/${ticketId}/respond`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                clinician_id: currentUser.user_id,
+                response_text: response
+            })
+        });
+
+        alert('Response sent successfully!');
+        await loadEscalations();
+    } catch (error) {
+        console.error('Error responding:', error);
+        alert('Failed to send response');
+    }
+}
+
+function showScreen(screen) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+    if (screen === 'chat') {
+        chatScreen.classList.add('active');
+    } else if (screen === 'dashboard') {
+        dashboardScreen.classList.add('active');
+    } else {
+        loginScreen.classList.add('active');
+    }
+}
+
+function logout() {
+    currentUser = null;
+    currentConversation = null;
+
+    // Stop polling for messages
+    stopMessagePolling();
+
+    messagesContainer.innerHTML = `
+        <div class="welcome-message">
+            <h3>Welcome to Nightingale AI</h3>
+            <p>I'm here to help with your health questions. Please describe your symptoms or concerns.</p>
+            <div class="safety-notice">
+                <strong>⚠️ Important:</strong> This is not a substitute for professional medical advice. In case of emergency, call 911 immediately.
+            </div>
+        </div>
+    `;
+    showScreen('login');
+}
+
+// Message polling functions
+function startMessagePolling() {
+    // Poll every 3 seconds for new messages
+    if (messagePollingInterval) {
+        clearInterval(messagePollingInterval);
+    }
+
+    messagePollingInterval = setInterval(async () => {
+        if (!currentConversation) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/conversations/${currentConversation.id}`);
+            const data = await response.json();
+
+            // Check if there are new messages
+            if (data.messages.length > lastMessageCount) {
+                // Get only new messages
+                const newMessages = data.messages.slice(lastMessageCount);
+
+                newMessages.forEach(msg => {
+                    // Only add if it's a clinician message (patient and AI messages are already shown)
+                    if (msg.sender_type === 'CLINICIAN') {
+                        addMessage('clinician', msg.content, msg.risk_level);
+                    }
+                });
+
+                lastMessageCount = data.messages.length;
+            }
+        } catch (error) {
+            console.error('Error polling messages:', error);
+        }
+    }, 3000); // Poll every 3 seconds
+}
+
+function stopMessagePolling() {
+    if (messagePollingInterval) {
+        clearInterval(messagePollingInterval);
+        messagePollingInterval = null;
+    }
+    lastMessageCount = 0;
+}
+
+// Make function global for onclick
+window.respondToEscalation = respondToEscalation;
