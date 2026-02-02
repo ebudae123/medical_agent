@@ -1,4 +1,4 @@
-# Nightingale AI: Technical Brief
+# Technical Brief
 
 ## 1. Architecture
 
@@ -98,12 +98,3 @@ The requirement for "Voice Readiness" is met through a decoupled ingestion strat
 We confirmed via `verifying_schema` task that `backend/models/message.py` supports:
 -   `audio_url`: S3/Blob storage link to the raw audio file.
 -   `transcription_id`: Link to the transcription job.
-
-### Future Integration Plan
-1.  **Client-Side**: PWA records audio blob.
-2.  **Ingestion API**: `POST /api/v1/voice/upload` receives blob.
-3.  **Transcriber**: Service (e.g., Google Deepgram/Whisper) converts Audio -> Text.
-4.  **Injection**: The text is inserted into the `messages` table with `sender='PATIENT'` and the `audio_url` field populated.
-5.  **Agent Trigger**: The existing LangGraph agent is triggered exactly as if it were a text message. The agent is agnostic to the input modality.
-
-This separation of concerns ensures that the safety logic (Redaction/Risk) remains identical whether the input is typed or spoken.
