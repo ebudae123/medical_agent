@@ -79,7 +79,7 @@ The database schema (PostgreSQL) is designed for **provenance** and **auditabili
 
 ## 4. Trade-offs & Scope
 
-In building this prototype, several strategic cuts were made to prioritize core agentic safety.
+In building this prototype, several strategic cuts were made.
 
 | Feature | Included? | Rationale |
 | :--- | :---: | :--- |
@@ -87,8 +87,9 @@ In building this prototype, several strategic cuts were made to prioritize core 
 | **Real-time Voice** | ❌ NO | Complexity of WebSocket streaming + VAD (Voice Activity Detection) was high. **mitigation**: Schema is "Voice Ready" (see section 5). |
 | **Vector Database** | ❌ NO | For a single patient profile, a structured JSON extraction is more precise than RAG (Retrieval Augmented Generation). RAG introduces "hallucination" risk for medical lookup. We chose precise JSON mutation instead. |
 | **FHIR Interoperability** | ❌ NO | FHIR is verbose and complex. We used a simplified internal JSON schema for speed, with the assumption that a mapping layer would be added for EMR integration. |
-
 ---
+
+In addition, there are still some issues at present, such as slow LLM response speed, incorrect updating of clinician's replies into memory, and the need for patients to log in again to view clinician's replies. LLM has not yet asked users for their opinions before Escalation.
 
 ## 5. VoiceAI Strategy
 
