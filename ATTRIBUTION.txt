@@ -57,11 +57,3 @@ The following Python libraries are used in this project. Reference `requirements
 **HTTPX**
 - License: BSD 3-Clause
 - Copyright: (c) 2019 Tom Christie
-
----
-
-### PROJECT LICENSE
-
-**Nightingale AI**
-- License: MIT
-- Copyright: (c) 2026 Nightingale Contributors
